@@ -1,0 +1,10 @@
+{
+  "name": "testFramework",
+  "version": "0.0.1",
+  "description": "Just a lightweight testing framework",
+  "main": "index.js",
+  "scripts": {
+  },
+  "author": "Matthijs Breijer",
+  "type":"module"
+}
