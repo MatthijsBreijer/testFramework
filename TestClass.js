@@ -1,5 +1,7 @@
 "use strict";
 
+// TODO: rewrite to node's assert library
+import Assert from 'assert';
 import TestHelper from './TestHelper.js';
 import Mock from './Mock.js';
 import AssertionException from './AssertionException.js';
@@ -27,9 +29,10 @@ class TestClass {
 
 	/**
 	 * @param function callback to isolate exception
-	 * @param function evaluationCallback to evaluate/assert content of exception
+	 * @param function|object evaluate to evaluate/assert content of exception
+	 * 
 	 */
-	assertException(callback, evaluationCallback) {
+	assertException(callback, evaluate) {
 		this.assertsMade++;
 
 		try {
@@ -37,11 +40,26 @@ class TestClass {
 			callback();
 		}
 		catch(e) {
-			// exception thrown, allow for custom assertions on exception
-			if (typeof evaluationCallback !== 'undefined') {
-				evaluationCallback(e);
+			// An exception thrown, which we are expecting
+			let exceptionIsEvaluated = false;
+
+			// Do object match
+			if (typeof evaluate === 'object') {
+				for (const [key, value] of Object.entries(evaluate)) {
+					this.assertObjectsMatch(e[key], evaluate[key]);
+				}
+				exceptionIsEvaluated = true;
 			}
-			return;
+
+			// Allow for custom assertions on exception with callback
+			if (typeof evaluate === 'function') {
+				evaluate(e);
+				exceptionIsEvaluated = true;
+			}
+
+			if (exceptionIsEvaluated) {
+				return;
+			}
 		}
 
 		this.assert(false, 'Expected exception to be thrown', callback);
@@ -181,7 +199,9 @@ class TestClass {
 	 */
 	assertObjectsMatch(result, expected, ...args) {
 		args = args.concat(['Expected:', expected, 'Result', result]);
-		this.assert(TestHelper.deepEqual(result,expected), ...args, this.getErrorLocation(2));
+		
+		this.assertsMade++;
+		Assert.deepEqual(result, expected);
 	}
 
 	getErrorLocation(offset = 0, exception = undefined) {
