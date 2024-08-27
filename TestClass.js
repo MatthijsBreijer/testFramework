@@ -85,7 +85,8 @@ class TestClass {
 				}
 				catch (e) {
 					success = false;
-					this.failures.push(this.constructor.name + ".setUp(): caused an uncaught exception.\r\n", e);
+					this.failures.push(this.constructor.name + ".setUp(): caused an uncaught exception.\r\n");
+					this.failures.push(e.stack);
 				}
 
 				// run the test
@@ -96,17 +97,11 @@ class TestClass {
 					success = false;
 
 					if (e instanceof AssertionException) {
-						
-						// pop last line from stack trace so the real failing line comes first
-						let stackTrace = e.stack;
-						let arr = stackTrace.split("\n");     //create an array with all lines
-						arr.splice(1,1);                      //remove the second line (first line after "ERROR")
-						stackTrace = arr.join("\n");   
-						
-						this.failures.push(stackTrace);
+						this.failures.push(this.#cleanStackTrace(e));
 					}
 					else {
-						this.failures.push(this.constructor.name + '.' + methods[i] + "(): caused an uncaught exception. See next line in console.\r\n", e);
+						this.failures.push(this.constructor.name + '.' + methods[i] + "(): caused an uncaught exception. See next line in console.\r\n");
+						this.failures.push(e.stack);
 					}
 				}
 
@@ -124,7 +119,8 @@ class TestClass {
 				}
 				catch (e) {
 					success = false;
-					this.failures.push(this.constructor.name + ".tearDown(): caused an uncaught exception.\r\n", e);
+					this.failures.push(this.constructor.name + ".tearDown(): caused an uncaught exception.\r\n");
+					this.failures.push(e.stack)
 				}
 
 				if (!test.isAsserted()) {
@@ -189,6 +185,15 @@ class TestClass {
 
 	getErrorLocation(offset = 0) {
 		return (new Error).stack.split("\n").slice(1 + offset);
+	}
+
+	#cleanStackTrace(e) {
+		// pop last line from stack trace so the real failing line comes first
+		let stackTrace = e.stack;
+		let arr = stackTrace.split("\n");     //create an array with all lines
+		arr.splice(1,1);                      //remove the second line (first line after "ERROR")
+		stackTrace = arr.join("\n");
+		return stackTrace;
 	}
 
 }
