@@ -63,7 +63,7 @@ class TestClass {
 	 */
 	run() {
 		// get all test methods starting with test
-		process.stdout.write("-------------------------------------------------------\r\n" + this.constructor.name + ": running tests\r\n");
+		process.stdout.write("\r\n\x1b[34m-------------------------------\r\n" + this.constructor.name + ": running tests\x1b[0m\r\n");
 		const methods = TestHelper.getInstanceMethodNames(this);
 		let testCounter = 0;
 			
@@ -85,7 +85,7 @@ class TestClass {
 				}
 				catch (e) {
 					success = false;
-					this.failures.push(this.constructor.name + ".setUp(): caused an uncaught exception.\r\n");
+					this.failures.push("\x1b[31m" + this.constructor.name + ".setUp(): caused an uncaught exception.\x1b[0m\r\n");
 					this.failures.push(e.stack);
 				}
 
@@ -97,10 +97,11 @@ class TestClass {
 					success = false;
 
 					if (e instanceof AssertionException) {
-						this.failures.push(this.#cleanStackTrace(e));
+						this.failures.push("\x1b[31m" + e.message.toString() + "\x1b[0m\r\n");
+						this.failures.push(this.getErrorLocation(e));
 					}
 					else {
-						this.failures.push(this.constructor.name + '.' + methods[i] + "(): caused an uncaught exception. See next line in console.\r\n");
+						this.failures.push("\x1b[31m" + this.constructor.name + '.' + methods[i] + "(): caused an uncaught exception. See next line in console.\x1b[0m\r\n");
 						this.failures.push(e.stack);
 					}
 				}
@@ -119,20 +120,20 @@ class TestClass {
 				}
 				catch (e) {
 					success = false;
-					this.failures.push(this.constructor.name + ".tearDown(): caused an uncaught exception.\r\n");
+					this.failures.push("\x1b[31m" + this.constructor.name + ".tearDown(): caused an uncaught exception.\x1b[0m\r\n");
 					this.failures.push(e.stack)
 				}
 
 				if (!test.isAsserted()) {
-					success = false;
-					this.failures.push(this.constructor.name + '.' + methods[i] + "(): No assertions made.\r\n");
+					process.stdout.write('\x1b[33mW\x1b[0m');
+					this.failures.push("\x1b[33mWarning: " + this.constructor.name + '.' + methods[i] + "(): No assertions made.\x1b[0m\r\n");
 				}
-
-				if (success) {
+				else if (success) {
 					process.stdout.write('.');
 				}
 				else {
-					process.stdout.write('F');
+					success = false;
+					process.stdout.write('\x1b[31mF\x1b[0m');
 				}
 
 				testCounter++;
@@ -141,13 +142,13 @@ class TestClass {
 		}
 
 		if (testCounter === 0) {
-			process.stdout.write(this.constructor.name + ": No tests found.\r\n");
+			process.stdout.write("\x1b[33mWarning: " + this.constructor.name + ": No tests found.\x1b[0m\r\n");
 		}
 
 		process.stdout.write("\r\n\r\n");
 		// all tests ran, display errors if any
 		if (this.failures.length > 0) {
-			process.stderr.write(this.failures.toString());
+			process.stdout.write(this.failures.toString());
 		}
 
 		// successful if no failures
@@ -183,17 +184,11 @@ class TestClass {
 		this.assert(TestHelper.deepEqual(result,expected), ...args, this.getErrorLocation(2));
 	}
 
-	getErrorLocation(offset = 0) {
-		return (new Error).stack.split("\n").slice(1 + offset);
-	}
-
-	#cleanStackTrace(e) {
-		// pop last line from stack trace so the real failing line comes first
-		let stackTrace = e.stack;
-		let arr = stackTrace.split("\n");     //create an array with all lines
-		arr.splice(1,1);                      //remove the second line (first line after "ERROR")
-		stackTrace = arr.join("\n");
-		return stackTrace;
+	getErrorLocation(offset = 0, exception = undefined) {
+		if (typeof exception === 'undefined') {
+			exception = new Error();
+		}
+		return exception.stack.split("\n").slice(1 + offset).join("\r\n");
 	}
 
 }
